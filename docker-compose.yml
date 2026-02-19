@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: AvarDB
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: haRulfwwfOhO0k
+      POSTGRES_PASSWORD: ''
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
@@ -24,7 +24,7 @@ services:
     environment:
       - DB_NAME=AvarDB
       - DB_USER=postgres
-      - DB_PASSWORD=haRulfwwfOhO0k
+      - DB_PASSWORD=''
       - DB_HOST=db
       - DB_PORT=5432
     depends_on:
