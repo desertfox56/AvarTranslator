@@ -1,0 +1,119 @@
+<!-- analyzer/templates/analyzer/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Лингвистический анализатор</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 40px auto; padding: 20px; }
+        textarea { width: 100%; height: 120px; padding: 10px; font-size: 16px; }
+        button { padding: 12px 24px; margin-top: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+        .word-analysis { margin: 15px 0; padding: 15px; background: white; border-left: 4px solid #007bff; }
+        .error { color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔤 Анализатор аварского языка</h1>
+    <p>Введите текст на аварском языке для морфологического анализа</p>
+    
+    <form id="analyze-form">
+        {% csrf_token %}
+        <textarea 
+            name="text" 
+            placeholder="Например: кIалса вачIана..."
+            id="text-input">кIалса вачIана</textarea>
+        <br>
+        <button type="submit">Анализировать</button>
+    </form>
+    
+    <div id="result" class="result" style="display: none;">
+        <!-- Результат появится здесь -->
+    </div>
+    
+    <div style="margin-top: 40px;">
+        <h3>Примеры для тестирования:</h3>
+        <ul>
+            <li><button onclick="setExample('кIалса вачIана')">кIалса вачIана</button> (мальчик пришел)</li>
+            <li><button onclick="setExample('хва вачIана')">хва вачIана</button> (девочка пришла)</li>
+            <li><button onclick="setExample('кIал лъугьана')">кIал лъугьана</button> (мальчик упал)</li>
+        </ul>
+    </div>
+    
+    <script>
+        function setExample(text) {
+            document.getElementById('text-input').value = text;
+        }
+        
+        document.getElementById('analyze-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>⏳ Анализируем...</p>';
+            resultDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/analyzer/api/analyze/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultDiv.innerHTML = `<div class="error"><strong>Ошибка:</strong> ${data.error}</div>`;
+                    return;
+                }
+                
+                // Отображаем результат
+                let html = `<h3>📊 Результат анализа</h3>`;
+                html += `<p><strong>Фраза:</strong> ${data.result.phrase}</p>`;
+                html += `<p><strong>Перевод:</strong> ${data.result.translation}</p>`;
+                
+                html += `<h4>Разбор по словам:</h4>`;
+                data.result.words.forEach(word => {
+                    if (word.error) {
+                        html += `<div class="error">${word.word}: ${word.error}</div>`;
+                    } else {
+                        html += `<div class="word-analysis">`;
+                        html += `<strong>${word.word}</strong><br>`;
+                        html += `📝 Корень: <strong>${word.root}</strong> (${word.root_gloss}, ${word.root_pos})<br>`;
+                        
+                        if (word.affixes && word.affixes.length > 0) {
+                            html += `🔗 Аффиксы: `;
+                            word.affixes.forEach(affix => {
+                                html += `<code>${affix.affix}</code> → ${affix.value} `;
+                            });
+                            html += `<br>`;
+                        }
+                        
+                        if (word.remaining && word.remaining !== '') {
+                            html += `⚠️ Неразобранная часть: "${word.remaining}"<br>`;
+                        }
+                        
+                        html += `</div>`;
+                    }
+                });
+                
+                // Сырые данные для отладки
+                html += `<details style="margin-top: 20px;">`;
+                html += `<summary>📋 Сырые данные (для отладки)</summary>`;
+                html += `<pre style="background: #e9ecef; padding: 10px;">${JSON.stringify(data.result, null, 2)}</pre>`;
+                html += `</details>`;
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error"><strong>Ошибка сети:</strong> ${error.message}</div>`;
+            }
+        });
+        
+        // Автоматически проанализировать пример при загрузке
+        window.addEventListener('load', function() {
+            document.querySelector('button[type="submit"]').click();
+        });
+    </script>
+</body>
+</html>
