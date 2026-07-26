@@ -4,6 +4,8 @@ class Tag(models.Model):
     """Грамматический тег (например, 'n', 'm', 'erg', 'sg')"""
     code = models.CharField(max_length=20, unique=True)  
     description = models.TextField(blank=True)
+    gloss = models.CharField(max_length=10,blank=True)
+    # ERG, NOM, GEN, DAT, LOC, ALL, ABL, SG, PL, M, F, NT...
 
     def __str__(self):
         return self.code
